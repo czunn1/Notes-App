@@ -997,8 +997,10 @@
     const note = getNoteById(state.activeNoteId);
     if (!note || note.deleted) return;
     setSaveStatus("saving");
-    note.title = document.getElementById("titleInput").value;
-    note.content = document.getElementById("contentEditable").innerHTML;
+    const titleEl = document.getElementById("titleInput");
+    const contentEl = document.getElementById("contentEditable");
+    note.title = titleEl.value;
+    note.content = contentEl.innerHTML;
     note.updatedAt = Date.now();
     saveNotes(state.notes);
     clearTimeout(state.saveTimer);
@@ -1048,6 +1050,20 @@
     renderNoteList();
     renderEditor();
     showToast("Permanently deleted", "success");
+  }
+
+  function purgeExpiredTrash() {
+    const now = Date.now();
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    const before = state.notes.length;
+    state.notes = state.notes.filter((note) => {
+      if (!note.deleted) return true;
+      if (!note.deletedAt) return true;
+      return now - note.deletedAt < thirtyDaysMs;
+    });
+    if (state.notes.length !== before) {
+      saveNotes(state.notes);
+    }
   }
 
   function openConfirm(title, desc, onConfirm) {
@@ -1236,6 +1252,7 @@
 
   function init() {
     seedInitialNote();
+    purgeExpiredTrash();
     applyTheme();
     initEventListeners();
     renderNoteList();
